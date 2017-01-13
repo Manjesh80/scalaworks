@@ -24,20 +24,26 @@ object NumberCalculator {
       .setMaster("local[2]")
       .setAppName("CustomReceiver")
 
+    // Batch Interval of 3 seconds
     val ssc = new StreamingContext(sparkConf, Seconds(3))
     ssc.sparkContext.setLogLevel("ERROR")
-    val lines = ssc.receiverStream(new NumberCalculator)
 
-    val words = lines.flatMap(_.split(" "))
-    val wordCounts = words.map(x => (x, 1)).reduceByKey(_ + _)
-    wordCounts.print()
+
+    val numbers = ssc.receiverStream(new NumberCalculator)
+    //val mappedNumbers = numbers.map(x => (if (x % 2 == 0) "EVEN" else "ODD", 1)).reduceByKey(_ + _)
+    ssc.checkpoint("./chkpoint")
+    val mappedNumbers = numbers.map(x => (if (x % 2 == 0) "EVEN" else "ODD", 1))
+      .reduceByKeyAndWindow((x, y) => x + y, (x, y) => x - y, Seconds(15), Seconds(6))
+
+    mappedNumbers.print()
+
     ssc.start()
     ssc.awaitTermination()
   }
 }
 
 class NumberCalculator()
-  extends Receiver[String](StorageLevel.MEMORY_AND_DISK_2) {
+  extends Receiver[Int](StorageLevel.MEMORY_AND_DISK_2) {
 
   def onStart() {
     new Thread("Receiver") {
@@ -54,8 +60,7 @@ class NumberCalculator()
   private def receive() {
     while (!isStopped()) {
       for (i <- 1 to 100) {
-        //store(scala.util.Random.nextInt(1000));
-        store("Jai Ganesh")
+        store(scala.util.Random.nextInt(1000));
       }
       Thread.sleep(1)
     }
