@@ -31,6 +31,7 @@ object NumberCalculator {
 
     val numbers = ssc.receiverStream(new NumberCalculator)
     //val mappedNumbers = numbers.map(x => (if (x % 2 == 0) "EVEN" else "ODD", 1)).reduceByKey(_ + _)
+
     ssc.checkpoint("./chkpoint")
     val mappedNumbers = numbers.map(x => (if (x % 2 == 0) "EVEN" else "ODD", 1))
       .reduceByKeyAndWindow((x, y) => x + y, (x, y) => x - y, Seconds(15), Seconds(6))
@@ -62,7 +63,7 @@ class NumberCalculator()
       for (i <- 1 to 100) {
         store(scala.util.Random.nextInt(1000));
       }
-      Thread.sleep(1)
+      Thread.sleep(10)
     }
   }
 }
