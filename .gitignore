@@ -21,3 +21,5 @@ project/plugins/project/
 /.idea/
 /receivedBlockMetadata/
 /df772583-8a15-4634-96d1-ae6a42216858/
+/chkpoint/*
+/target/

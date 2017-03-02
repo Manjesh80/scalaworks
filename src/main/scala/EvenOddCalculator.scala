@@ -1,49 +1,29 @@
-/**
-  *
-  * Author: mg153v (Manjesh Gowda). Creation Date: 1/11/2017.
-  */
-
-import java.io.{BufferedReader, InputStreamReader}
-import java.net.Socket
-import java.nio.charset.StandardCharsets
-
-import org.apache.spark.SparkConf
-import org.apache.spark.internal.Logging
-import org.apache.spark.storage.StorageLevel
-import org.apache.spark.streaming.{Seconds, StreamingContext}
-import org.apache.spark.streaming.receiver.Receiver
 import org.apache.log4j.{Level, Logger}
+import org.apache.spark.SparkConf
+import org.apache.spark.storage.StorageLevel
+import org.apache.spark.streaming.receiver.Receiver
+import org.apache.spark.streaming.{Seconds, StreamingContext}
 
-object NumberCalculator {
+object EvenOddCalculator {
   def main(args: Array[String]): Unit = {
 
     val rootLogger = Logger.getRootLogger()
     rootLogger.setLevel(Level.OFF)
 
-    val sparkConf = new SparkConf()
-      .setMaster("local[2]")
-      .setAppName("CustomReceiver")
-
-    // Batch Interval of 3 seconds
-    val ssc = new StreamingContext(sparkConf, Seconds(3))
+    val sparkConf = new SparkConf().setMaster("local[2]").setAppName("CustomReceiver")
+    val ssc = new StreamingContext(sparkConf, Seconds(3)) // Batch Interval of 3 seconds
     ssc.sparkContext.setLogLevel("ERROR")
-
-
-    val numbers = ssc.receiverStream(new NumberCalculator)
-    //val mappedNumbers = numbers.map(x => (if (x % 2 == 0) "EVEN" else "ODD", 1)).reduceByKey(_ + _)
-
+    val numbers = ssc.receiverStream(new EvenOddCalculator)
     ssc.checkpoint("./chkpoint")
     val mappedNumbers = numbers.map(x => (if (x % 2 == 0) "EVEN" else "ODD", 1))
       .reduceByKeyAndWindow((x, y) => x + y, (x, y) => x - y, Seconds(15), Seconds(6))
-
     mappedNumbers.print()
-
     ssc.start()
     ssc.awaitTermination()
   }
 }
 
-class NumberCalculator()
+class EvenOddCalculator()
   extends Receiver[Int](StorageLevel.MEMORY_AND_DISK_2) {
 
   def onStart() {
